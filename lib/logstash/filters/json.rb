@@ -16,11 +16,11 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   milestone 2
 
   # The configuration for the JSON filter:
-  #
+  # [source,ruby]
   #     source => source_field
   #
   # For example, if you have JSON data in the @message field:
-  #
+  # [source,ruby]
   #     filter {
   #       json {
   #         source => "message"
@@ -33,8 +33,8 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # Define the target field for placing the parsed data. If this setting is
   # omitted, the JSON data will be stored at the root (top level) of the event.
   #
-  # For example, if you want the data to be put in the 'doc' field:
-  #
+  # For example, if you want the data to be put in the `doc` field:
+  # [source,ruby]
   #     filter {
   #       json {
   #         target => "doc"
