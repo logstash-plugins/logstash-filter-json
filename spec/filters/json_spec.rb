@@ -1,14 +1,14 @@
 require "spec_helper"
 require "logstash/filters/json"
+require "logstash/timestamp"
 
 describe LogStash::Filters::Json do
-  
 
   describe "parse message into the event" do
     config <<-CONFIG
       filter {
         json {
-          # Parse message as JSON, store the results in the 'data' field'
+          # Parse message as JSON
           source => "message"
         }
       }
@@ -16,7 +16,7 @@ describe LogStash::Filters::Json do
 
     sample '{ "hello": "world", "list": [ 1, 2, 3 ], "hash": { "k": "v" } }' do
       insist { subject["hello"] } == "world"
-      insist { subject["list" ] } == [1,2,3]
+      insist { subject["list" ].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
       insist { subject["hash"] } == { "k" => "v" }
     end
   end
@@ -34,7 +34,7 @@ describe LogStash::Filters::Json do
 
     sample '{ "hello": "world", "list": [ 1, 2, 3 ], "hash": { "k": "v" } }' do
       insist { subject["data"]["hello"] } == "world"
-      insist { subject["data"]["list" ] } == [1,2,3]
+      insist { subject["data"]["list" ].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
       insist { subject["data"]["hash"] } == { "k" => "v" }
     end
   end
@@ -65,8 +65,25 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample "{ \"@timestamp\": \"2013-10-19T00:14:32.996Z\" }" do
-      insist { subject["@timestamp"] }.is_a?(Time)
-      insist { subject["@timestamp"].to_json } == "\"2013-10-19T00:14:32.996Z\""
+      insist { subject["@timestamp"] }.is_a?(LogStash::Timestamp)
+      insist { LogStash::Json.dump(subject["@timestamp"]) } == "\"2013-10-19T00:14:32.996Z\""
     end
   end
+
+  describe "source == target" do
+    config <<-CONFIG
+      filter {
+        json {
+          source => "example"
+          target => "example"
+        }
+      }
+    CONFIG
+
+    sample({ "example" => "{ \"hello\": \"world\" }" }) do
+      insist { subject["example"] }.is_a?(Hash)
+      insist { subject["example"]["hello"] } == "world"
+    end
+  end
+
 end
