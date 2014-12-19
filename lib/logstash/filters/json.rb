@@ -80,7 +80,12 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       # like your text is '[ 1,2,3 ]' json parser gives you an array (correctly)
       # which won't merge into a hash. If someone needs this, we can fix it
       # later.
-      dest.merge!(LogStash::Json.load(source))
+
+      # When using json input in jruby, the type of object that is
+      # returned is not reloadable through Json.load. So it does not need to
+      # be reloaded
+      filtered_source = source.is_a?(Java::JavaUtil::LinkedHashMap) ? source : LogStash::Json.load(source)
+      dest.merge!(filtered_source)
 
       # If no target, we target the root of the event object. This can allow
       # you to overwrite @timestamp and this will typically happen for json
