@@ -18,7 +18,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # [source,ruby]
   #     source => source_field
   #
-  # For example, if you have JSON data in the @message field:
+  # For example, if you have JSON data in the `message` field:
   # [source,ruby]
   #     filter {
   #       json {
@@ -26,7 +26,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   #       }
   #     }
   #
-  # The above would parse the json from the @message field
+  # The above would parse the json from the `message` field
   config :source, :validate => :string, :required => true
 
   # Define the target field for placing the parsed data. If this setting is
