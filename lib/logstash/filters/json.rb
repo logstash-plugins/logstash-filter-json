@@ -13,7 +13,6 @@ require "logstash/timestamp"
 class LogStash::Filters::Json < LogStash::Filters::Base
 
   config_name "json"
-  milestone 2
 
   # The configuration for the JSON filter:
   # [source,ruby]
