@@ -90,7 +90,9 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
       filter_matched(event)
     rescue => e
-      event.tag("_jsonparsefailure")
+      tag = "_jsonparsefailure"
+      event["tags"] ||= []
+      event["tags"] << tag unless event["tags"].include?(tag)
       @logger.warn("Trouble parsing json", :source => @source,
                    :raw => event[@source], :exception => e)
       return
