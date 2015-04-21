@@ -86,4 +86,44 @@ describe LogStash::Filters::Json do
     end
   end
 
+  context "when json could not be parsed" do
+
+    subject(:filter) {  LogStash::Filters::Json.new(config)  }
+
+    let(:message)    { "random_message" }
+    let(:config)     { {"source" => "message"} }
+    let(:event)      { LogStash::Event.new("message" => message) }
+
+    before(:each) do
+      filter.register
+      filter.filter(event)
+    end
+
+    it "add the failure tag" do
+      expect(event).to include "tags"
+    end
+
+    it "uses an array to store the tags" do
+      expect(event['tags']).to be_a Array
+    end
+
+    it "add a json parser failure tag" do
+      expect(event['tags']).to include "_jsonparsefailure"
+    end
+
+    context "there are two different errors added" do
+
+      let(:event)  { LogStash::Event.new("message" => message, "tags" => ["_anotherkinfoffailure"] ) }
+
+      it "pile the different error messages" do
+        expect(event['tags']).to include "_jsonparsefailure"
+      end
+
+      it "keep the former error messages on the list" do
+        expect(event['tags']).to include "_anotherkinfoffailure"
+      end
+    end
+
+  end
+
 end
