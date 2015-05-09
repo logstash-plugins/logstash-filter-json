@@ -75,11 +75,18 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     end
 
     begin
-      # TODO(sissel): Note, this will not successfully handle json lists
-      # like your text is '[ 1,2,3 ]' json parser gives you an array (correctly)
-      # which won't merge into a hash. If someone needs this, we can fix it
-      # later.
-      dest.merge!(LogStash::Json.load(source))
+      parsed = LogStash::Json.load(source)
+      # If your parsed JSON is an array, we can't merge, so you must specify a
+      # destination to store the JSON, so you will get an exception about
+      if parsed.kind_of?(Java::JavaUtil::ArrayList)
+        if @target.nil?
+          raise('Parsed JSON arrays must have a destination in the configuration')
+        else
+          event[@target] = parsed
+        end
+      else
+        dest.merge!(parsed)
+      end
 
       # If no target, we target the root of the event object. This can allow
       # you to overwrite @timestamp and this will typically happen for json

@@ -86,6 +86,23 @@ describe LogStash::Filters::Json do
     end
   end
 
+  describe "parse JSON array into target field" do
+    config <<-CONFIG
+      filter {
+        json {
+          # Parse message as JSON, store the results in the 'data' field'
+          source => "message"
+          target => "data"
+        }
+      }
+    CONFIG
+
+    sample '[ { "k": "v" }, { "l": [1, 2, 3] } ]' do
+      insist { subject["data"][0]["k"] } == "v"
+      insist { subject["data"][1]["l"].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
+    end
+  end
+
   context "when json could not be parsed" do
 
     subject(:filter) {  LogStash::Filters::Json.new(config)  }
@@ -124,6 +141,14 @@ describe LogStash::Filters::Json do
       end
     end
 
-  end
+    context "the JSON is an ArrayList" do
 
+      let(:message)  { "[1, 2, 3]" }
+
+      it "adds the failure tag" do
+        expect(event['tags']).to include "_jsonparsefailure"
+      end
+    end
+
+  end
 end
