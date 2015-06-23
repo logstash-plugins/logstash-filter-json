@@ -62,24 +62,14 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     # TODO(colin) this field merging stuff below should be handled in Event.
 
     source = event[@source]
-    if @target.nil?
-      # Default is to write to the root of the event.
-      dest = event.to_hash
-    else
-      if @target == @source
-        # Overwrite source
-        dest = event[@target] = {}
-      else
-        dest = event[@target] ||= {}
-      end
-    end
 
     begin
-      # TODO(sissel): Note, this will not successfully handle json lists
-      # like your text is '[ 1,2,3 ]' json parser gives you an array (correctly)
-      # which won't merge into a hash. If someone needs this, we can fix it
-      # later.
-      dest.merge!(LogStash::Json.load(source))
+      parsed = LogStash::Json.load(source)
+      if @target.nil?
+        event.to_hash.merge! parsed
+      else
+        event[@target] = parsed
+      end
 
       # If no target, we target the root of the event object. This can allow
       # you to overwrite @timestamp and this will typically happen for json
