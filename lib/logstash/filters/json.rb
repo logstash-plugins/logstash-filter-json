@@ -62,30 +62,17 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     # TODO(colin) this field merging stuff below should be handled in Event.
 
     source = event[@source]
-    if @target.nil?
-      # Default is to write to the root of the event.
-      dest = event.to_hash
-    else
-      if @target == @source
-        # Overwrite source
-        dest = event[@target] = {}
-      else
-        dest = event[@target] ||= {}
-      end
-    end
 
     begin
       parsed = LogStash::Json.load(source)
       # If your parsed JSON is an array, we can't merge, so you must specify a
       # destination to store the JSON, so you will get an exception about
-      if parsed.kind_of?(Java::JavaUtil::ArrayList)
-        if @target.nil?
-          raise('Parsed JSON arrays must have a destination in the configuration')
-        else
-          event[@target] = parsed
-        end
+      if parsed.kind_of?(Java::JavaUtil::ArrayList) && @target.nil?
+        raise('Parsed JSON arrays must have a destination in the configuration')
+      elsif @target.nil?
+        event.to_hash.merge! parsed
       else
-        dest.merge!(parsed)
+        event[@target] = parsed
       end
 
       # If no target, we target the root of the event object. This can allow
