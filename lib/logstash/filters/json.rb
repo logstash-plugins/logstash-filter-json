@@ -67,7 +67,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       parsed = LogStash::Json.load(source)
       # If your parsed JSON is an array, we can't merge, so you must specify a
       # destination to store the JSON, so you will get an exception about
-      if parsed.kind_of?(Java::JavaUtil::ArrayList) && @target.nil?
+      if parsed.kind_of?(Array) && @target.nil?
         raise('Parsed JSON arrays must have a destination in the configuration')
       elsif @target.nil?
         event.to_hash.merge! parsed
