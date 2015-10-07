@@ -53,7 +53,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
   public
   def filter(event)
-    return unless filter?(event)
+    
 
     @logger.debug("Running json filter", :event => event)
 
