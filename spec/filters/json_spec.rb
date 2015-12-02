@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/filters/json"
 require "logstash/timestamp"
@@ -103,52 +105,72 @@ describe LogStash::Filters::Json do
     end
   end
 
-  context "when json could not be parsed" do
+  context "using message field source" do
 
     subject(:filter) {  LogStash::Filters::Json.new(config)  }
 
-    let(:message)    { "random_message" }
-    let(:config)     { {"source" => "message"} }
-    let(:event)      { LogStash::Event.new("message" => message) }
+    let(:config) { {"source" => "message"} }
+    let(:event) { LogStash::Event.new("message" => message) }
 
     before(:each) do
       filter.register
       filter.filter(event)
     end
 
-    it "add the failure tag" do
-      expect(event).to include "tags"
-    end
+    context "when json could not be parsed" do
+      let(:message) { "random_message" }
 
-    it "uses an array to store the tags" do
-      expect(event['tags']).to be_a Array
-    end
-
-    it "add a json parser failure tag" do
-      expect(event['tags']).to include "_jsonparsefailure"
-    end
-
-    context "there are two different errors added" do
-
-      let(:event)  { LogStash::Event.new("message" => message, "tags" => ["_anotherkinfoffailure"] ) }
-
-      it "pile the different error messages" do
-        expect(event['tags']).to include "_jsonparsefailure"
+      it "add the failure tag" do
+        expect(event).to include("tags")
       end
 
-      it "keep the former error messages on the list" do
-        expect(event['tags']).to include "_anotherkinfoffailure"
+      it "uses an array to store the tags" do
+        expect(event['tags']).to be_a(Array)
+      end
+
+      it "add a json parser failure tag" do
+        expect(event['tags']).to include("_jsonparsefailure")
+      end
+
+      context "there are two different errors added" do
+
+        let(:event)  { LogStash::Event.new("message" => message, "tags" => ["_anotherkinfoffailure"] ) }
+
+        it "pile the different error messages" do
+          expect(event['tags']).to include("_jsonparsefailure")
+        end
+
+        it "keep the former error messages on the list" do
+          expect(event['tags']).to include("_anotherkinfoffailure")
+        end
       end
     end
 
     context "the JSON is an ArrayList" do
-
-      let(:message)  { "[1, 2, 3]" }
+      let(:message) { "[1, 2, 3]" }
 
       it "adds the failure tag" do
-        expect(event['tags']).to include "_jsonparsefailure"
+        expect(event['tags']).to include("_jsonparsefailure")
       end
     end
 
+    context "json contains valid timestamp" do
+      let(:message) { "{\"foo\":\"bar\", \"@timestamp\":\"2015-12-02T17:40:00.666Z\"}" }
+
+      it "should set json timestamp" do
+        expect(event.timestamp).to be_a(LogStash::Timestamp)
+        expect(event.timestamp.to_s).to eq("2015-12-02T17:40:00.666Z")
+      end
+    end
+
+    context "json contains invalid timestamp" do
+      let(:message) { "{\"foo\":\"bar\", \"@timestamp\":\"foobar\"}" }
+
+      it "should set timestamp to current time" do
+        expect(event.timestamp).to be_a(LogStash::Timestamp)
+        expect(event["tags"]).to include(LogStash::Event::TIMESTAMP_FAILURE_TAG)
+        expect(event[LogStash::Event::TIMESTAMP_FAILURE_FIELD]).to eq("foobar")
+      end
+    end
   end
 end

@@ -46,54 +46,64 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # NOTE: if the `target` field already exists, it will be overwritten!
   config :target, :validate => :string
 
-  public
+  JSONPARSEFAILURE_TAG = "_jsonparsefailure"
+
   def register
     # Nothing to do here
-  end # def register
+  end
 
-  public
   def filter(event)
-    
-
-    @logger.debug("Running json filter", :event => event)
-
-    return unless event.include?(@source)
-
-    # TODO(colin) this field merging stuff below should be handled in Event.
+    @logger.debug? && @logger.debug("Running json filter", :event => event)
 
     source = event[@source]
+    return unless source
 
     begin
       parsed = LogStash::Json.load(source)
-      # If your parsed JSON is an array, we can't merge, so you must specify a
-      # destination to store the JSON, so you will get an exception about
-      if parsed.kind_of?(Array) && @target.nil?
-        raise('Parsed JSON arrays must have a destination in the configuration')
-      elsif @target.nil?
-        event.to_hash.merge! parsed
-      else
-        event[@target] = parsed
-      end
-
-      # If no target, we target the root of the event object. This can allow
-      # you to overwrite @timestamp and this will typically happen for json
-      # LogStash Event deserialized here.
-      if !@target && event.timestamp.is_a?(String)
-        event.timestamp = LogStash::Timestamp.parse_iso8601(event.timestamp)
-      end
-
-      filter_matched(event)
     rescue => e
-      tag = "_jsonparsefailure"
-      event["tags"] ||= []
-      event["tags"] << tag unless event["tags"].include?(tag)
-      @logger.warn("Trouble parsing json", :source => @source,
-                   :raw => event[@source], :exception => e)
+      event.tag(JSONPARSEFAILURE_TAG)
+      @logger.warn("Error parsing json", :source => @source, :raw => source, :exception => e)
       return
     end
 
-    @logger.debug("Event after json filter", :event => event)
+    if @target
+      event[@target] = parsed
+    else
+      unless parsed.is_a?(Hash)
+        event.tag(JSONPARSEFAILURE_TAG)
+        @logger.warn("Parsed JSON object/hash requires a target configuration option", :source => @source, :raw => source)
+        return
+      end
 
-  end # def filter
+      # TODO: (colin) the timestamp initialization should be DRY'ed but exposing the similar code
+      # in the Event#init_timestamp method. See https://github.com/elastic/logstash/issues/4293
 
-end # class LogStash::Filters::Json
+      # a) since the parsed hash will be set in the event root, first extract any @timestamp field to properly initialized it
+      parsed_timestamp = parsed.delete(LogStash::Event::TIMESTAMP)
+      begin
+        timestamp = parsed_timestamp ? LogStash::Timestamp.coerce(parsed_timestamp) : nil
+      rescue LogStash::TimestampParserError => e
+        timestamp = nil
+      end
+
+      # b) then set all parsed fields in the event
+      parsed.each{|k, v| event[k] = v}
+
+      # c) finally re-inject proper @timestamp
+      if parsed_timestamp
+        if timestamp
+          event.timestamp = timestamp
+        else
+          event.timestamp = LogStash::Timestamp.new
+          @logger.warn("Unrecognized #{LogStash::Event::TIMESTAMP} value, setting current time to #{LogStash::Event::TIMESTAMP}, original in #{LogStash::Event::TIMESTAMP_FAILURE_FIELD} field", :value => parsed_timestamp.inspect)
+          event.tag(LogStash::Event::TIMESTAMP_FAILURE_TAG)
+          event[LogStash::Event::TIMESTAMP_FAILURE_FIELD] = parsed_timestamp.to_s
+        end
+      end
+    end
+
+    filter_matched(event)
+
+    @logger.debug? && @logger.debug("Event after json filter", :event => event)
+  end
+end
