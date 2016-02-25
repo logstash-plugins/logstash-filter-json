@@ -46,7 +46,9 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # NOTE: if the `target` field already exists, it will be overwritten!
   config :target, :validate => :string
 
-  JSONPARSEFAILURE_TAG = "_jsonparsefailure"
+  # Append values to the `tags` field when there has been no
+  # successful match
+  config :tag_on_failure, :validate => :array, :default => ["_jsonparsefailure"]
 
   def register
     # Nothing to do here
@@ -61,7 +63,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     begin
       parsed = LogStash::Json.load(source)
     rescue => e
-      event.tag(JSONPARSEFAILURE_TAG)
+      @tag_on_failure.each{|tag| event.tag(tag)}
       @logger.warn("Error parsing json", :source => @source, :raw => source, :exception => e)
       return
     end
