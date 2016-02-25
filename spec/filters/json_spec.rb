@@ -48,12 +48,14 @@ describe LogStash::Filters::Json do
           # Parse message as JSON, store the results in the 'data' field'
           source => "message"
           target => "data"
+          tag_on_failure => ["_jsonparsefailure","_custom_failure_tag"]
         }
       }
     CONFIG
 
     sample "invalid json" do
       insist { subject["tags"] }.include?("_jsonparsefailure")
+      insist { subject["tags"] }.include?("_custom_failure_tag")
     end
   end
 
