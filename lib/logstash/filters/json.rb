@@ -10,6 +10,15 @@ require "logstash/timestamp"
 # By default it will place the parsed JSON in the root (top level) of the Logstash event, but this
 # filter can be configured to place the JSON into any arbitrary event field, using the
 # `target` configuration.
+# 
+# This plugin has a few fallback scenario when something bad happen during the parsing of the event.
+# If the JSON parsing fails on the data, the event will be untouched and it will be tagged with a
+# `_jsonparsefailure` then you can use conditionals to clean the data. You can configured this tag with then
+# `tag_on_failure` option.
+#
+# If the parsed data contains a `@timestamp` field, we will try to use it for the event's `@timestamp`, if the
+# parsing fails, the field will be renamed to `_@timestamp` and the event will be tagged with a
+# `_timestampparsefailure`.
 class LogStash::Filters::Json < LogStash::Filters::Base
 
   config_name "json"
