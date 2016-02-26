@@ -72,7 +72,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       event[@target] = parsed
     else
       unless parsed.is_a?(Hash)
-        event.tag(JSONPARSEFAILURE_TAG)
+        @tag_on_failure.each{|tag| event.tag(tag)}
         @logger.warn("Parsed JSON object/hash requires a target configuration option", :source => @source, :raw => source)
         return
       end
