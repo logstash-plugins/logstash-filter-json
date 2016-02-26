@@ -1,3 +1,6 @@
+## 2.0.4
+ - Added an option to configure the tags set when a `JSON` parsing error occur #20
+
 ## 2.0.3
  - Refactored field references, better timestamp handling, code & specs cleanups
 
