@@ -59,6 +59,9 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # successful match
   config :tag_on_failure, :validate => :array, :default => ["_jsonparsefailure"]
 
+  # Allow to quietly fall-back to plain-text (aka skip the filter without warnings and tags)
+  config :fallback_mode, :validate => :boolean, :default => false
+
   def register
     # Nothing to do here
   end
@@ -72,8 +75,10 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     begin
       parsed = LogStash::Json.load(source)
     rescue => e
-      @tag_on_failure.each{|tag| event.tag(tag)}
-      @logger.warn("Error parsing json", :source => @source, :raw => source, :exception => e)
+      unless @fallback_mode
+        @tag_on_failure.each{|tag| event.tag(tag)}
+        @logger.warn("Error parsing json", :source => @source, :raw => source, :exception => e)
+      end
       return
     end
 
