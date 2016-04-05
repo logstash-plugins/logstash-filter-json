@@ -175,4 +175,51 @@ describe LogStash::Filters::Json do
       end
     end
   end
+
+  describe "parse mixture of json an non-json content (fallback mode)" do
+    subject(:filter) {  LogStash::Filters::Json.new(config)  }
+
+    let(:config) { {"source" => "message", "remove_field" => ["message"], "fallback_mode" => fallback_mode} }
+    let(:event) { LogStash::Event.new("message" => message) }
+
+    before(:each) do
+      allow(filter.logger).to receive(:warn)
+      filter.register
+      filter.filter(event)
+    end
+
+    let(:message) { "this is not a json message" }
+
+    context "with fallback_mode off" do
+      let(:fallback_mode) { false }
+
+      it "sends a warning to the logger" do
+        expect(filter.logger).to have_received(:warn).with("Error parsing json", anything())
+      end
+
+      it "keeps the source field" do
+        expect(event["message"]).to eq message
+      end
+
+      it "adds a parse-error tag" do
+        expect(event["tags"]).to eq ["_jsonparsefailure"]
+      end
+    end
+
+    context "with fallback_mode on" do
+      let(:fallback_mode) { true }
+
+      it "sends no warning" do
+        expect(filter.logger).to_not have_received(:warn)
+      end
+
+      it "keeps the source field" do
+        expect(event["message"]).to eq message
+      end
+
+      it "does not add a parse-error tag" do
+        expect(event["tags"]).to be_nil
+      end
+    end
+  end
 end
