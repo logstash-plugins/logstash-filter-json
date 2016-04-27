@@ -176,10 +176,10 @@ describe LogStash::Filters::Json do
     end
   end
 
-  describe "parse mixture of json an non-json content (fallback mode)" do
+  describe "parse mixture of json an non-json content (skip_on_invalid_json)" do
     subject(:filter) {  LogStash::Filters::Json.new(config)  }
 
-    let(:config) { {"source" => "message", "remove_field" => ["message"], "fallback_mode" => fallback_mode} }
+    let(:config) { {"source" => "message", "remove_field" => ["message"], "skip_on_invalid_json" => skip_on_invalid_json} }
     let(:event) { LogStash::Event.new("message" => message) }
 
     before(:each) do
@@ -190,8 +190,8 @@ describe LogStash::Filters::Json do
 
     let(:message) { "this is not a json message" }
 
-    context "with fallback_mode off" do
-      let(:fallback_mode) { false }
+    context "with `skip_on_invalid_json` set to false" do
+      let(:skip_on_invalid_json) { false }
 
       it "sends a warning to the logger" do
         expect(filter.logger).to have_received(:warn).with("Error parsing json", anything())
@@ -206,8 +206,8 @@ describe LogStash::Filters::Json do
       end
     end
 
-    context "with fallback_mode on" do
-      let(:fallback_mode) { true }
+    context "with `skip_on_invalid_json` set to true" do
+      let(:skip_on_invalid_json) { true }
 
       it "sends no warning" do
         expect(filter.logger).to_not have_received(:warn)
