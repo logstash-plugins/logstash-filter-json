@@ -17,9 +17,9 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample '{ "hello": "world", "list": [ 1, 2, 3 ], "hash": { "k": "v" } }' do
-      insist { subject["hello"] } == "world"
-      insist { subject["list" ].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
-      insist { subject["hash"] } == { "k" => "v" }
+      insist { subject.get("hello") } == "world"
+      insist { subject.get("list" ).to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
+      insist { subject.get("hash") } == { "k" => "v" }
     end
   end
 
@@ -35,9 +35,9 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample '{ "hello": "world", "list": [ 1, 2, 3 ], "hash": { "k": "v" } }' do
-      insist { subject["data"]["hello"] } == "world"
-      insist { subject["data"]["list" ].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
-      insist { subject["data"]["hash"] } == { "k" => "v" }
+      insist { subject.get("data")["hello"] } == "world"
+      insist { subject.get("data")["list" ].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
+      insist { subject.get("data")["hash"] } == { "k" => "v" }
     end
   end
 
@@ -54,8 +54,8 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample "invalid json" do
-      insist { subject["tags"] }.include?("_jsonparsefailure")
-      insist { subject["tags"] }.include?("_custom_failure_tag")
+      insist { subject.get("tags") }.include?("_jsonparsefailure")
+      insist { subject.get("tags") }.include?("_custom_failure_tag")
     end
   end
 
@@ -69,8 +69,8 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample "{ \"@timestamp\": \"2013-10-19T00:14:32.996Z\" }" do
-      insist { subject["@timestamp"] }.is_a?(LogStash::Timestamp)
-      insist { LogStash::Json.dump(subject["@timestamp"]) } == "\"2013-10-19T00:14:32.996Z\""
+      insist { subject.get("@timestamp") }.is_a?(LogStash::Timestamp)
+      insist { LogStash::Json.dump(subject.get("@timestamp")) } == "\"2013-10-19T00:14:32.996Z\""
     end
   end
 
@@ -85,8 +85,8 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample({ "example" => "{ \"hello\": \"world\" }" }) do
-      insist { subject["example"] }.is_a?(Hash)
-      insist { subject["example"]["hello"] } == "world"
+      insist { subject.get("example") }.is_a?(Hash)
+      insist { subject.get("example")["hello"] } == "world"
     end
   end
 
@@ -102,8 +102,8 @@ describe LogStash::Filters::Json do
     CONFIG
 
     sample '[ { "k": "v" }, { "l": [1, 2, 3] } ]' do
-      insist { subject["data"][0]["k"] } == "v"
-      insist { subject["data"][1]["l"].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
+      insist { subject.get("data")[0]["k"] } == "v"
+      insist { subject.get("data")[1]["l"].to_a } == [1,2,3] # to_a for JRuby + JrJacksom which creates Java ArrayList
     end
   end
 
@@ -127,11 +127,11 @@ describe LogStash::Filters::Json do
       end
 
       it "uses an array to store the tags" do
-        expect(event['tags']).to be_a(Array)
+        expect(event.get('tags')).to be_a(Array)
       end
 
       it "add a json parser failure tag" do
-        expect(event['tags']).to include("_jsonparsefailure")
+        expect(event.get('tags')).to include("_jsonparsefailure")
       end
 
       context "there are two different errors added" do
@@ -139,11 +139,11 @@ describe LogStash::Filters::Json do
         let(:event)  { LogStash::Event.new("message" => message, "tags" => ["_anotherkinfoffailure"] ) }
 
         it "pile the different error messages" do
-          expect(event['tags']).to include("_jsonparsefailure")
+          expect(event.get('tags')).to include("_jsonparsefailure")
         end
 
         it "keep the former error messages on the list" do
-          expect(event['tags']).to include("_anotherkinfoffailure")
+          expect(event.get('tags')).to include("_anotherkinfoffailure")
         end
       end
     end
@@ -152,7 +152,7 @@ describe LogStash::Filters::Json do
       let(:message) { "[1, 2, 3]" }
 
       it "adds the failure tag" do
-        expect(event['tags']).to include("_jsonparsefailure")
+        expect(event.get('tags')).to include("_jsonparsefailure")
       end
     end
 
@@ -170,8 +170,8 @@ describe LogStash::Filters::Json do
 
       it "should set timestamp to current time" do
         expect(event.timestamp).to be_a(LogStash::Timestamp)
-        expect(event["tags"]).to include(LogStash::Event::TIMESTAMP_FAILURE_TAG)
-        expect(event[LogStash::Event::TIMESTAMP_FAILURE_FIELD]).to eq("foobar")
+        expect(event.get("tags")).to include(LogStash::Event::TIMESTAMP_FAILURE_TAG)
+        expect(event.get(LogStash::Event::TIMESTAMP_FAILURE_FIELD)).to eq("foobar")
       end
     end
   end

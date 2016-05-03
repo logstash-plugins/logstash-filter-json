@@ -66,7 +66,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   def filter(event)
     @logger.debug? && @logger.debug("Running json filter", :event => event)
 
-    source = event[@source]
+    source = event.get(@source)
     return unless source
 
     begin
@@ -78,7 +78,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     end
 
     if @target
-      event[@target] = parsed
+      event.set(@target, parsed)
     else
       unless parsed.is_a?(Hash)
         @tag_on_failure.each{|tag| event.tag(tag)}
@@ -98,7 +98,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       end
 
       # b) then set all parsed fields in the event
-      parsed.each{|k, v| event[k] = v}
+      parsed.each{|k, v| event.set(k, v)}
 
       # c) finally re-inject proper @timestamp
       if parsed_timestamp
@@ -108,7 +108,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
           event.timestamp = LogStash::Timestamp.new
           @logger.warn("Unrecognized #{LogStash::Event::TIMESTAMP} value, setting current time to #{LogStash::Event::TIMESTAMP}, original in #{LogStash::Event::TIMESTAMP_FAILURE_FIELD} field", :value => parsed_timestamp.inspect)
           event.tag(LogStash::Event::TIMESTAMP_FAILURE_TAG)
-          event[LogStash::Event::TIMESTAMP_FAILURE_FIELD] = parsed_timestamp.to_s
+          event.set(LogStash::Event::TIMESTAMP_FAILURE_FIELD, parsed_timestamp.to_s)
         end
       end
     end
