@@ -198,11 +198,11 @@ describe LogStash::Filters::Json do
       end
 
       it "keeps the source field" do
-        expect(event["message"]).to eq message
+        expect(event.get("message")).to eq message
       end
 
       it "adds a parse-error tag" do
-        expect(event["tags"]).to eq ["_jsonparsefailure"]
+        expect(event.get("tags")).to eq ["_jsonparsefailure"]
       end
     end
 
@@ -214,11 +214,11 @@ describe LogStash::Filters::Json do
       end
 
       it "keeps the source field" do
-        expect(event["message"]).to eq message
+        expect(event.get("message")).to eq message
       end
 
       it "does not add a parse-error tag" do
-        expect(event["tags"]).to be_nil
+        expect(event.get("tags")).to be_nil
       end
     end
   end
