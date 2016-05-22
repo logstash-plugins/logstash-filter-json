@@ -41,6 +41,23 @@ describe LogStash::Filters::Json do
     end
   end
 
+  describe "parse message into a dynamically named target field" do
+    config <<-CONFIG
+      filter {
+        json {
+          # Parse message as JSON, store the results in the field named
+          # by the contents of the 'target' field'
+          source => "message"
+          target => "%{target}"
+        }
+      }
+    CONFIG
+
+    sample({"target" => "data", "message" => '{ "hello": "world" }'}) do
+      insist { subject.get("[data][hello]") } == "world"
+    end
+  end
+
   describe "tag invalid json" do
     config <<-CONFIG
       filter {
