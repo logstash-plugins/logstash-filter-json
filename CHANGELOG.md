@@ -1,3 +1,6 @@
+## 3.0.6
+  - Updated documentation with some clarifications and fixes
+
 ## 3.0.5
   - Update gemspec summary
 
