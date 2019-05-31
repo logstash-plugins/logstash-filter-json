@@ -1,3 +1,6 @@
+## 3.1.0
+ - Added better error handling, preventing some classes of malformed inputs from crashing the pipeline.
+
 ## 3.0.6
   - Updated documentation with some clarifications and fixes
 

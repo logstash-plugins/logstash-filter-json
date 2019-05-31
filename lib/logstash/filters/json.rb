@@ -76,7 +76,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       parsed = LogStash::Json.load(source)
     rescue => e
       unless @skip_on_invalid_json
-        @tag_on_failure.each{|tag| event.tag(tag)}
+        _do_tag_on_failure(event)
         @logger.warn("Error parsing json", :source => @source, :raw => source, :exception => e)
       end
       return
@@ -86,7 +86,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       event.set(@target, parsed)
     else
       unless parsed.is_a?(Hash)
-        @tag_on_failure.each{|tag| event.tag(tag)}
+        _do_tag_on_failure(event)
         @logger.warn("Parsed JSON object/hash requires a target configuration option", :source => @source, :raw => source)
         return
       end
@@ -121,5 +121,14 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     filter_matched(event)
 
     @logger.debug? && @logger.debug("Event after json filter", :event => event)
+  rescue => ex
+    meta = { :exception => ex.message, :source => @source, :raw => source}
+    meta[:backtrace] = ex.backtrace if logger.debug?
+    logger.warn('Exception caught in json filter', meta)
+    _do_tag_on_failure(event)
+  end
+
+  def _do_tag_on_failure(event)
+    @tag_on_failure.each { |tag| event.tag(tag) }
   end
 end
