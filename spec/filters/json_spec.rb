@@ -3,6 +3,7 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/filters/json"
 require "logstash/timestamp"
+require 'rubygems'
 
 describe LogStash::Filters::Json do
 
@@ -56,6 +57,52 @@ describe LogStash::Filters::Json do
     sample "invalid json" do
       insist { subject.get("tags") }.include?("_jsonparsefailure")
       insist { subject.get("tags") }.include?("_custom_failure_tag")
+    end
+  end
+
+  logstash_version = Gem::Version.create(LOGSTASH_CORE_VERSION)
+
+  if (Gem::Requirement.create('>= 7.0').satisfied_by?(logstash_version) ||
+     (Gem::Requirement.create('~> 6.4').satisfied_by?(logstash_version) && LogStash::SETTINGS.get('config.field_reference.parser') == 'STRICT'))
+    describe "unsupported field name using `target`" do
+      config <<-CONFIG
+        filter {
+          json {
+            # Parse message as JSON, store the results in the 'data' field'
+            source => "message"
+            target => "data"
+            tag_on_failure => ["_jsonparsefailure","_custom_failure_tag"]
+          }
+        }
+      CONFIG
+
+      sample '{"okay":true, "un[sup]]ported": "foo", "another": "okay"}' do
+        insist { subject.get("tags") }.include?("_jsonparsefailure")
+        insist { subject.get("tags") }.include?("_custom_failure_tag")
+
+        # it does not partially apply
+        insist { subject.include?('[data][okay]') } == false
+        insist { subject.include?('[data][another]') } == false
+      end
+    end
+
+    describe "unsupported field name without target" do
+      config <<-CONFIG
+        filter {
+          json {
+            # Parse message as JSON, store the results in the 'data' field'
+            source => "message"
+            tag_on_failure => ["_jsonparsefailure","_custom_failure_tag"]
+          }
+        }
+      CONFIG
+
+      sample '{"okay":true, "un[sup]]ported": "foo", "another": "okay"}' do
+        insist { subject.get("tags") }.include?("_jsonparsefailure")
+        insist { subject.get("tags") }.include?("_custom_failure_tag")
+
+        # we can make no guarantees about partial application in this case.
+      end
     end
   end
 
