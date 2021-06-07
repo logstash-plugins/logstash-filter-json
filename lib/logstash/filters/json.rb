@@ -75,7 +75,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   end
 
   def filter(event)
-    @logger.debug? && @logger.debug("Running json filter", :event => event)
+    @logger.debug? && @logger.debug("Running json filter", :event => event.to_hash)
 
     source = event.get(@source)
     return unless source
@@ -128,11 +128,11 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
     filter_matched(event)
 
-    @logger.debug? && @logger.debug("Event after json filter", :event => event)
+    @logger.debug? && @logger.debug("Event after json filter", :event => event.to_hash)
   rescue => ex
-    meta = { :exception => ex.message, :source => @source, :raw => source}
-    meta[:backtrace] = ex.backtrace if logger.debug?
-    logger.warn('Exception caught in json filter', meta)
+    meta = { :source => @source, :raw => source, :exception => ex }
+    meta[:backtrace] = ex.backtrace if @logger.debug?
+    @logger.warn('Exception caught in json filter', meta)
     _do_tag_on_failure(event)
   end
 
