@@ -1,3 +1,7 @@
+## 3.2.0
+ - Feat: check target is set in ECS mode [#49](https://github.com/logstash-plugins/logstash-filter-json/pull/49)
+ - Refactor: logging improvements to print event details in debug mode
+
 ## 3.1.0
  - Added better error handling, preventing some classes of malformed inputs from crashing the pipeline.
 
