@@ -155,12 +155,14 @@ describe LogStash::Filters::Json do
     end
   end
 
+  subject(:filter) {  LogStash::Filters::Json.new(config)  }
+
+  let(:config) { {"source" => "message"} }
+  let(:event) { LogStash::Event.new("message" => message) }
+
+  let(:logger) { filter.logger }
+
   context "using message field source" do
-
-    subject(:filter) {  LogStash::Filters::Json.new(config)  }
-
-    let(:config) { {"source" => "message"} }
-    let(:event) { LogStash::Event.new("message" => message) }
 
     before(:each) do
       filter.register
@@ -222,6 +224,52 @@ describe LogStash::Filters::Json do
         expect(event.get(LogStash::Event::TIMESTAMP_FAILURE_FIELD)).to eq("foobar")
       end
     end
+  end
+
+  describe "target" do
+
+    let(:logger) { filter.logger }
+
+    before { allow( logger ).to receive(:info) }
+
+    context 'empty' do
+      let(:config) { { "source" => "message", 'target' => '' } }
+      let(:message) { ' {"foo": "bar"} ' }
+
+      it "works as if no target was set" do
+        filter.register
+        filter.filter(event)
+        expect( event.get('foo') ).to eql 'bar'
+      end
+    end
+
+    context 'not set in ECS mode' do
+      let(:config) { { "source" => "message", 'ecs_compatibility' => 'v1' } }
+      let(:message) { ' { "foo": "bar" } ' }
+
+      it "works but logs a warning" do
+        filter.register
+        expect( logger ).to have_received(:info).with(/ECS compatibility is enabled but `target` option was not specified/i)
+
+        filter.filter(event)
+        expect( event.get('foo') ).to eql 'bar'
+      end
+    end
+
+    context 'set in ECS mode' do
+      let(:config) { { "source" => "message", 'ecs_compatibility' => 'v1', 'target' => '[baz]' } }
+      let(:message) { ' { "foo": "bar" } ' }
+
+      it "works (no warning logged)" do
+        filter.register
+        expect( logger ).to_not have_received(:info)
+
+        filter.filter(event)
+        expect( event.include?('foo') ).to be false
+        expect( event.get('baz') ).to eql 'foo' => 'bar'
+      end
+    end
+
   end
 
   describe "parse mixture of json an non-json content (skip_on_invalid_json)" do
