@@ -107,6 +107,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       begin
         timestamp = parsed_timestamp ? LogStash::Timestamp.coerce(parsed_timestamp) : nil
       rescue LogStash::TimestampParserError => e
+        @logger.debug("Failed to coerce timestamp", :timestamp => parsed_timestamp, :message => e.message)
         timestamp = nil
       end
 
