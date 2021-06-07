@@ -230,15 +230,12 @@ describe LogStash::Filters::Json do
 
     let(:logger) { filter.logger }
 
-    before { allow( logger ).to receive(:info) }
-
     context 'not set in ECS mode' do
       let(:config) { { "source" => "message", 'ecs_compatibility' => 'v1' } }
       let(:message) { ' { "foo": "bar" } ' }
 
-      it "works but logs a warning" do
-        filter.register
-        expect( logger ).to have_received(:info).with(/ECS compatibility is enabled but `target` option was not specified/i)
+      it "works" do
+        filter.register # a warning logged
 
         filter.filter(event)
         expect( event.get('foo') ).to eql 'bar'
@@ -249,9 +246,8 @@ describe LogStash::Filters::Json do
       let(:config) { { "source" => "message", 'ecs_compatibility' => 'v1', 'target' => '[baz]' } }
       let(:message) { ' { "foo": "bar" } ' }
 
-      it "works (no warning logged)" do
-        filter.register
-        expect( logger ).to_not have_received(:info)
+      it "works" do
+        filter.register # no warning logged
 
         filter.filter(event)
         expect( event.include?('foo') ).to be false
