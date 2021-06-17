@@ -155,12 +155,14 @@ describe LogStash::Filters::Json do
     end
   end
 
+  subject(:filter) {  LogStash::Filters::Json.new(config)  }
+
+  let(:config) { {"source" => "message"} }
+  let(:event) { LogStash::Event.new("message" => message) }
+
+  let(:logger) { filter.logger }
+
   context "using message field source" do
-
-    subject(:filter) {  LogStash::Filters::Json.new(config)  }
-
-    let(:config) { {"source" => "message"} }
-    let(:event) { LogStash::Event.new("message" => message) }
 
     before(:each) do
       filter.register
@@ -222,6 +224,37 @@ describe LogStash::Filters::Json do
         expect(event.get(LogStash::Event::TIMESTAMP_FAILURE_FIELD)).to eq("foobar")
       end
     end
+  end
+
+  describe "target" do
+
+    let(:logger) { filter.logger }
+
+    context 'not set in ECS mode' do
+      let(:config) { { "source" => "message", 'ecs_compatibility' => 'v1' } }
+      let(:message) { ' { "foo": "bar" } ' }
+
+      it "works" do
+        filter.register # a warning logged
+
+        filter.filter(event)
+        expect( event.get('foo') ).to eql 'bar'
+      end
+    end
+
+    context 'set in ECS mode' do
+      let(:config) { { "source" => "message", 'ecs_compatibility' => 'v1', 'target' => '[baz]' } }
+      let(:message) { ' { "foo": "bar" } ' }
+
+      it "works" do
+        filter.register # no warning logged
+
+        filter.filter(event)
+        expect( event.include?('foo') ).to be false
+        expect( event.get('baz') ).to eql 'foo' => 'bar'
+      end
+    end
+
   end
 
   describe "parse mixture of json an non-json content (skip_on_invalid_json)" do

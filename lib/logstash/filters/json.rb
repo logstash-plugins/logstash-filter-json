@@ -3,6 +3,9 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "logstash/json"
 require "logstash/timestamp"
+require 'logstash/plugin_mixins/ecs_compatibility_support'
+require 'logstash/plugin_mixins/ecs_compatibility_support/target_check'
+require 'logstash/plugin_mixins/validator_support/field_reference_validation_adapter'
 
 # This is a JSON parsing filter. It takes an existing field which contains JSON and
 # expands it into an actual data structure within the Logstash event.
@@ -20,6 +23,11 @@ require "logstash/timestamp"
 # parsing fails, the field will be renamed to `_@timestamp` and the event will be tagged with a
 # `_timestampparsefailure`.
 class LogStash::Filters::Json < LogStash::Filters::Base
+
+  include LogStash::PluginMixins::ECSCompatibilitySupport
+  include LogStash::PluginMixins::ECSCompatibilitySupport::TargetCheck
+
+  extend LogStash::PluginMixins::ValidatorSupport::FieldReferenceValidationAdapter
 
   config_name "json"
 
@@ -53,7 +61,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # data structure in the `target` field.
   #
   # NOTE: if the `target` field already exists, it will be overwritten!
-  config :target, :validate => :string
+  config :target, :validate => :field_reference
 
   # Append values to the `tags` field when there has been no
   # successful match
@@ -67,7 +75,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   end
 
   def filter(event)
-    @logger.debug? && @logger.debug("Running json filter", :event => event)
+    @logger.debug? && @logger.debug("Running json filter", :event => event.to_hash)
 
     source = event.get(@source)
     return unless source
@@ -99,6 +107,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
       begin
         timestamp = parsed_timestamp ? LogStash::Timestamp.coerce(parsed_timestamp) : nil
       rescue LogStash::TimestampParserError => e
+        @logger.debug("Failed to coerce timestamp", :timestamp => parsed_timestamp, :message => e.message)
         timestamp = nil
       end
 
@@ -120,11 +129,11 @@ class LogStash::Filters::Json < LogStash::Filters::Base
 
     filter_matched(event)
 
-    @logger.debug? && @logger.debug("Event after json filter", :event => event)
+    @logger.debug? && @logger.debug("Event after json filter", :event => event.to_hash)
   rescue => ex
-    meta = { :exception => ex.message, :source => @source, :raw => source}
-    meta[:backtrace] = ex.backtrace if logger.debug?
-    logger.warn('Exception caught in json filter', meta)
+    meta = { :source => @source, :raw => source, :exception => ex }
+    meta[:backtrace] = ex.backtrace if @logger.debug?
+    @logger.warn('Exception caught in json filter', meta)
     _do_tag_on_failure(event)
   end
 

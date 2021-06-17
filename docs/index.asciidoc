@@ -36,6 +36,13 @@ If the parsed data contains a `@timestamp` field, the plugin will try to use it 
 parsing fails, the field will be renamed to `_@timestamp` and the event will be tagged with a
 `_timestampparsefailure`.
 
+[id="plugins-{type}s-{plugin}-ecs_metadata"]
+==== Event Metadata and the Elastic Common Schema (ECS)
+
+The plugin behaves the same regardless of ECS compatibility, except giving a warning when ECS is enabled and `target` isn't set.
+
+TIP: Set the `target` option to avoid potential schema conflicts.
+
 [id="plugins-{type}s-{plugin}-options"]
 ==== JSON Filter Configuration Options
 
@@ -44,6 +51,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 [cols="<,<,<",options="header",]
 |=======================================================================
 |Setting |Input type|Required
+| <<plugins-{type}s-{plugin}-ecs_compatibility>> | <<string,string>>|No
 | <<plugins-{type}s-{plugin}-skip_on_invalid_json>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-source>> |<<string,string>>|Yes
 | <<plugins-{type}s-{plugin}-tag_on_failure>> |<<array,array>>|No
@@ -54,6 +62,18 @@ Also see <<plugins-{type}s-{plugin}-common-options>> for a list of options suppo
 filter plugins.
 
 &nbsp;
+
+[id="plugins-{type}s-{plugin}-ecs_compatibility"]
+===== `ecs_compatibility`
+
+* Value type is <<string,string>>
+* Supported values are:
+** `disabled`: does not use ECS-compatible field names
+** `v1`: Elastic Common Schema compliant behavior (warns when `target` isn't set)
+
+Controls this plugin's compatibility with the
+{ecs-ref}[Elastic Common Schema (ECS)].
+See <<plugins-{type}s-{plugin}-ecs_metadata>> for detailed information.
 
 [id="plugins-{type}s-{plugin}-skip_on_invalid_json"]
 ===== `skip_on_invalid_json` 
