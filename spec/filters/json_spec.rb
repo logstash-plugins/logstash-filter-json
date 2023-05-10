@@ -62,8 +62,9 @@ describe LogStash::Filters::Json do
   end
 
   logstash_version = Gem::Version.create(LOGSTASH_CORE_VERSION)
-
-  if (Gem::Requirement.create('>= 7.0').satisfied_by?(logstash_version) ||
+  
+  # Field Reference can handle special characters since 8.3.0
+  if ((Gem::Requirement.create('>= 7.0').satisfied_by?(logstash_version) && Gem::Requirement.create('< 8.3').satisfied_by?(logstash_version)) ||
      (Gem::Requirement.create('~> 6.4').satisfied_by?(logstash_version) && LogStash::SETTINGS.get('config.field_reference.parser') == 'STRICT'))
     describe "unsupported field name using `target`" do
       config <<-CONFIG
