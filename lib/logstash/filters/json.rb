@@ -85,8 +85,9 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     rescue => e
       unless @skip_on_invalid_json
         @logger.warn("Error parsing json", :source => @source, :raw => source, :exception => e)
+      else
+        _do_tag_on_failure(event)
       end
-      _do_tag_on_failure(event)
       return
     end
 
