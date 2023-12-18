@@ -1,3 +1,6 @@
+## 3.2.1
+  - Fix tag on failure test [#52](https://github.com/logstash-plugins/logstash-filter-json/pull/52)
+
 ## 3.2.0
  - Feat: check target is set in ECS mode [#49](https://github.com/logstash-plugins/logstash-filter-json/pull/49)
  - Refactor: logging improvements to print event details in debug mode
