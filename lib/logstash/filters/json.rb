@@ -60,6 +60,12 @@ class LogStash::Filters::Json < LogStash::Filters::Base
   # JSON in the value of the `source` field will be expanded into a
   # data structure in the `target` field.
   #
+  # The string in the `target` option may contain dynamic sprintf-style
+  # field references, i.e. the contents of one field can be used to choose
+  # the name of the target field. Dynamic field references can only refer
+  # to already existing fields, so the JSON string being parsed can't
+  # contain the name of the target field.
+  #
   # NOTE: if the `target` field already exists, it will be overwritten!
   config :target, :validate => :field_reference
 
@@ -91,7 +97,7 @@ class LogStash::Filters::Json < LogStash::Filters::Base
     end
 
     if @target
-      event.set(@target, parsed)
+      event.set(event.sprintf(@target), parsed)
     else
       unless parsed.is_a?(Hash)
         _do_tag_on_failure(event)
